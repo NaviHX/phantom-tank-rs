@@ -53,6 +53,32 @@ impl PhantomTank {
 
         ret
     }
+
+    pub fn generate_color(&self) -> RgbaImage {
+        let fg_grey = self.to_gray(&self.fg, 1.0);
+        let bg_grey = self.to_gray(&self.bg, 0.22);
+        let bg_dark = self.scale(&self.bg, 0.22);
+
+        let mut ret = RgbaImage::new(self.width, self.height);
+
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let luma_fg = fg_grey.get_pixel(x, y).0[0];
+                let luma_bg = bg_grey.get_pixel(x, y).0[0];
+                let pix_bg = bg_dark.get_pixel(x, y).0;
+
+                let alpha = (255 - luma_fg).saturating_add(luma_bg);
+
+                let r = ((pix_bg[0] as f32 * 255.) / alpha as f32) as u8;
+                let g = ((pix_bg[1] as f32 * 255.) / alpha as f32) as u8;
+                let b = ((pix_bg[2] as f32 * 255.) / alpha as f32) as u8;
+
+                ret.put_pixel(x, y, image::Rgba::from([r, g, b, alpha]));
+            }
+        }
+
+        ret
+    }
 }
 
 impl PhantomTank {
@@ -65,6 +91,21 @@ impl PhantomTank {
                     as f32
                     * scale) as u8;
                 ret.put_pixel(x, y, image::Rgba::from([grey, grey, grey, 255]));
+            }
+        }
+
+        ret
+    }
+
+    fn scale(&self, pic: &RgbaImage, scale: f32) -> RgbaImage {
+        let mut ret: RgbaImage = RgbaImage::new(self.width, self.height);
+        for x in 0..self.width {
+            for y in 0..self.height {
+                let p = pic.get_pixel(x, y);
+                let r = (p.0[0] as f32 * scale) as u8;
+                let g = (p.0[1] as f32 * scale) as u8;
+                let b = (p.0[2] as f32 * scale) as u8;
+                ret.put_pixel(x, y, image::Rgba::from([r, g, b, 255]));
             }
         }
 
